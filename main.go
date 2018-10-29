@@ -73,7 +73,6 @@ func getCveData(cpeUri string) (string, error) {
 	out, err := pipeline.Output(
 		[]string{
 			"curl",
-			"-v",
 			"-H",
 			"Accept: application/json",
 			"-H",
