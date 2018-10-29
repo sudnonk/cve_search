@@ -47,6 +47,7 @@ AGAIN:
 	}
 
 	for _, cve := range cves {
+		log.Println(cve.Cvss2Severity)
 		if cve.Cvss2Severity == "HIGH" || cve.Cvss2Severity == "CRITICAL" {
 			fmt.Println("CveID: " + cve.CveID + " Severity: " + cve.Cvss2Severity)
 		}
