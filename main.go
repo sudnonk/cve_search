@@ -31,6 +31,7 @@ func main() {
 	}
 
 	var cpeUri string
+	var num int
 	for rows.Next() {
 		var uri string
 
@@ -40,6 +41,10 @@ func main() {
 		}
 
 		cpeUri += uri + "\n"
+		num++
+		if num%1000 == 0 {
+			log.Println(num)
+		}
 	}
 	rows.Close()
 
