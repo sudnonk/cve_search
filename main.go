@@ -25,11 +25,7 @@ func main() {
 
 	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
 	cmd.Start()
-	log.Println(cmd.Process.Pid)
-	log.Println(cpeUri)
-
 	body := "{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}"
-
 	out2, err2 := pipeline.Output(
 		[]string{
 			"curl",
@@ -45,12 +41,27 @@ func main() {
 			"http://localhost:1323/cpes",
 		},
 	)
-	log.Println(cmd.Process.Pid)
 	defer cmd.Process.Kill()
 
 	if err2 != nil {
 		log.Fatal(out2, err2)
 	}
 
-	log.Println(string(out2))
+	cve := string(out2)
+	out3, err3 := pipeline.Output(
+		[]string{
+			"echo",
+			cve,
+		},
+		[]string{
+			"jq",
+			"..",
+		},
+	)
+
+	if err3 != nil {
+		log.Fatal(out3, err3)
+	}
+
+	log.Println(out3)
 }
