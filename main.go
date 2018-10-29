@@ -21,14 +21,14 @@ func main() {
 	}
 
 	rows, err := db.Query(
-		`select ope_uri from categorized_cpes`,
+		`select cpe_uri from categorized_cpes`,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer rows.Close()
-	var opeUri string
+	var cpeUri string
 	for rows.Next() {
 		var uri string
 
@@ -37,10 +37,10 @@ func main() {
 			return
 		}
 
-		opeUri += uri + "\n"
+		cpeUri += uri + "\n"
 	}
 
-	fmt.Println(opeUri)
+	fmt.Println(cpeUri)
 
 	/*
 
