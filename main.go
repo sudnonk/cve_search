@@ -28,6 +28,8 @@ func main() {
 	log.Println(cmd.Process.Pid)
 	log.Println(cpeUri)
 
+	body := "{'name': '" + strings.TrimRight(cpeUri, "\n") + "}'"
+
 	out2, err2 := pipeline.Output(
 		[]string{
 			"curl",
@@ -39,7 +41,7 @@ func main() {
 			"-X",
 			"POST",
 			"-d",
-			"{'name': '" + strings.TrimRight(cpeUri, "\n") + "}'",
+			body,
 			"http://localhost:1323/cpes",
 		},
 	)
