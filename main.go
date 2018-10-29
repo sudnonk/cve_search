@@ -95,6 +95,7 @@ func getCveData(cpeUri string) (string, error) {
 func parseJson2CVE(json string) ([]CVE, error) {
 	var lines []string
 	lines = strings.Split(json, "\n")
+	log.Println(lines)
 
 	if len(lines)%5 != 0 {
 		return nil, errors.New("invalid number of lines　" + string(len(lines)))
