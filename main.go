@@ -51,6 +51,7 @@ AGAIN:
 			fmt.Println("CveID: " + cve.CveID + " Severity: " + cve.Cvss2Severity)
 		}
 	}
+	fmt.Println("done,")
 
 }
 
