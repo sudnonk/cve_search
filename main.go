@@ -21,7 +21,7 @@ func main() {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(1, out, err)
+		log.Fatal(1, out.String(), stderr.String())
 	}
 	/*
 		cmd = exec.Command("peco")
