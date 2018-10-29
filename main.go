@@ -28,7 +28,7 @@ func main() {
 	log.Println(cmd.Process.Pid)
 	log.Println(cpeUri)
 
-	body := "{'name': '" + strings.TrimRight(cpeUri, "\n") + "}'"
+	body := "{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}"
 
 	out2, err2 := pipeline.Output(
 		[]string{
