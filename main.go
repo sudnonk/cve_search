@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mattn/go-pipeline"
 	"log"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -29,11 +28,6 @@ func main() {
 	}
 
 	errNum := 0
-	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
-	cmd.Start()
-	fmt.Println("Starting go-cve-dictionary server...")
-	time.Sleep(5 * time.Second)
-
 AGAIN:
 	cveJson, err2 := getCveData(cpeUri)
 	if err2 != nil {
@@ -46,14 +40,13 @@ AGAIN:
 			goto AGAIN
 		}
 	}
-	cmd.Process.Kill()
 
 	cves, err3 := parseJson2CVE(cveJson)
 	if err3 != nil {
 		log.Fatal(err3)
 	}
 
-	for cve := range cves {
+	for _, cve := range cves {
 		if cve.Cvss2Severity == "HIGH" || cve.Cvss2Severity == "CRITICAL" {
 			fmt.Println("CveID: " + cve.CveID + " Severity: " + cve.Cvss2Severity)
 		}
