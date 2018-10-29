@@ -28,6 +28,8 @@ func main() {
 	}
 
 	errNum := 0
+	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
+	cmd.Start()
 AGAIN:
 	cveJson, err2 := getCveData(cpeUri)
 	if err2 != nil {
@@ -40,6 +42,7 @@ AGAIN:
 			goto AGAIN
 		}
 	}
+	cmd.Process.Kill()
 
 	cves, err3 := parseJson2CVE(cveJson)
 	if err3 != nil {
@@ -62,8 +65,7 @@ func getCpeUri() (string, error) {
 }
 
 func getCveData(cpeUri string) (string, error) {
-	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
-	cmd.Start()
+
 	body := "{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}"
 	out, err := pipeline.Output(
 		[]string{
@@ -84,7 +86,6 @@ func getCveData(cpeUri string) (string, error) {
 			".[] | .NvdJSON | .CveID,.Cvss2.BaseScore,.Cvss2.Severity,.Cvss3.BaseScore,.Cvss3.BaseSeverity",
 		},
 	)
-	defer cmd.Process.Kill()
 
 	if err != nil {
 		return "", err
