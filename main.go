@@ -55,7 +55,7 @@ func main() {
 		},
 		[]string{
 			"jq",
-			"..",
+			".NVD",
 		},
 	)
 
