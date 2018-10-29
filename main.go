@@ -27,12 +27,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cveData, err2 := getCveData(cpeUri)
+	errNum := 0
+AGAIN:
+	cveJson, err2 := getCveData(cpeUri)
 	if err2 != nil {
-		log.Fatal(err2)
+		errNum++
+		//エラーが10回起きたらrecoverやめる
+		if errNum >= 10 {
+			log.Fatal(err2)
+		} else {
+			goto AGAIN
+		}
 	}
 
-	log.Println(cveData)
+	cves, err3 := parseJson2CVE(cveJson)
+	if err3 != nil {
+		log.Fatal(err3)
+	}
+
+	log.Println(cves)
 }
 
 func getCpeUri() (string, error) {
@@ -47,7 +60,7 @@ func getCpeUri() (string, error) {
 	return string(out), nil
 }
 
-func getCveData(cpeUri string) ([]CVE, error) {
+func getCveData(cpeUri string) (string, error) {
 	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
 	cmd.Start()
 	body := "{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}"
@@ -76,11 +89,15 @@ func getCveData(cpeUri string) ([]CVE, error) {
 		return nil, err
 	}
 
+	return string(out), nil
+}
+
+func parseJson2CVE(json string) ([]CVE, error) {
 	var lines []string
-	lines = strings.Split(string(out), "\n")
+	lines = strings.Split(json, "\n")
 
 	if len(lines)%5 != 0 {
-		return nil, errors.New("invalid number of lines")
+		return nil, errors.New("invalid number of lines　" + string(len(lines)))
 	}
 
 	var cves []CVE
