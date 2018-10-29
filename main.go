@@ -33,12 +33,13 @@ func main() {
 	cmd.Start()
 	fmt.Println("Starting go-cve-dictionary server...")
 	time.Sleep(5 * time.Second)
+
 AGAIN:
 	cveJson, err2 := getCveData(cpeUri)
 	if err2 != nil {
 		errNum++
-		//エラーが10回起きたらrecoverやめる
-		if errNum >= 10 {
+		//エラーが5回起きたらrecoverやめる
+		if errNum >= 5 {
 			log.Fatal(err2)
 		} else {
 			time.Sleep(3 * time.Second)
@@ -52,7 +53,12 @@ AGAIN:
 		log.Fatal(err3)
 	}
 
-	log.Println(cves)
+	for cve := range cves {
+		if cve.Cvss2Severity == "HIGH" || cve.Cvss2Severity == "CRITICAL" {
+			fmt.Println("CveID: " + cve.CveID + " Severity: " + cve.Cvss2Severity)
+		}
+	}
+
 }
 
 func getCpeUri() (string, error) {
@@ -100,12 +106,6 @@ func getCveData(cpeUri string) (string, error) {
 func parseJson2CVE(json string) ([]CVE, error) {
 	var lines []string
 	lines = strings.Split(json, "\n")
-	log.Println(lines)
-
-	if len(lines)%5 != 0 {
-		//return nil, errors.New("invalid number of lines　" + string(len(lines)))
-	}
-	log.Println(len(lines))
 
 	var cves []CVE
 	for i := 0; i < len(lines)-5; i += 5 {
@@ -116,7 +116,6 @@ func parseJson2CVE(json string) ([]CVE, error) {
 			lines[i+3],
 			lines[i+4],
 		}
-		log.Println(cve)
 		cves = append(cves, cve)
 	}
 
