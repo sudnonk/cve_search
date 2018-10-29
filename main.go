@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/mattn/go-pipeline"
 	"log"
 	"os/exec"
@@ -98,7 +97,7 @@ func parseJson2CVE(json string) ([]CVE, error) {
 	log.Println(lines)
 
 	if len(lines)%5 != 0 {
-		return nil, errors.New("invalid number of lines　" + string(len(lines)))
+		//return nil, errors.New("invalid number of lines　" + string(len(lines)))
 	}
 
 	var cves []CVE
@@ -110,6 +109,7 @@ func parseJson2CVE(json string) ([]CVE, error) {
 			lines[i+3],
 			lines[i+4],
 		}
+		log.Println(cve)
 		cves = append(cves, cve)
 	}
 
