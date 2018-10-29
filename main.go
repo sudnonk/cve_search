@@ -17,7 +17,7 @@ func main() {
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 
-	cmd := exec.Command("sqlite3", CpeDbPath, " 'select cpe_uri from categorized_cpes'")
+	cmd := exec.Command("sqlite3", CpeDbPath, "-echo", "'select cpe_uri from categorized_cpes'")
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 
