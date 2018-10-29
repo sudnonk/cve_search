@@ -14,7 +14,7 @@ const (
 func main() {
 	out, err := pipeline.Output(
 		[]string{"sqlite3", CpeDbPath, "'select cpe_uri from categorized_cpes'"},
-		[]string{"peco"},
+		//		[]string{"peco"},
 	)
 	if err != nil {
 		log.Fatal(out, err)
