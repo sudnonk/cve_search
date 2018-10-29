@@ -50,5 +50,5 @@ func main() {
 		log.Fatal(out2, err2)
 	}
 
-	log.Println(out2)
+	log.Println(string(out2))
 }
