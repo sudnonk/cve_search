@@ -44,7 +44,7 @@ func main() {
 		},
 	)
 	log.Println(cmd.Process.Pid)
-	//defer cmd.Process.Kill()
+	defer cmd.Process.Kill()
 
 	if err2 != nil {
 		log.Fatal(out2, err2)
