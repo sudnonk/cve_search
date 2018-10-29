@@ -39,7 +39,7 @@ func main() {
 			"-X",
 			"POST",
 			"-d",
-			"'{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}'",
+			"{'name': '" + strings.TrimRight(cpeUri, "\n") + "}'",
 			"http://localhost:1323/cpes",
 		},
 	)
