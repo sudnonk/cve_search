@@ -42,7 +42,7 @@ func main() {
 		},
 		[]string{
 			"jq",
-			".[] | .NvdJSON | .CveID,.Cvss3.BaseScore,.Cvss3.BaseSeverity",
+			".[] | .NvdJSON | .CveID,.Cvss2.BaseScore,.Cvss2.BaseSeverity",
 		},
 	)
 	defer cmd.Process.Kill()
