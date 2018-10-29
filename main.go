@@ -13,7 +13,7 @@ const (
 
 func main() {
 	out, err := pipeline.Output(
-		[]string{"sqlite3", CpeDbPath, "-help" /*"'SELECT cpe_uri FROM categorized_cpes'"*/},
+		[]string{"sqlite3", CpeDbPath, "'select * from categorized_cpes'" /*"'SELECT cpe_uri FROM categorized_cpes'"*/},
 		//		[]string{"peco"},
 	)
 	if err != nil {
