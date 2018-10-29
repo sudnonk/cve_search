@@ -30,7 +30,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defer rows.Close()
 	var cpeUri string
 	for rows.Next() {
 		var uri string
@@ -42,6 +41,9 @@ func main() {
 
 		cpeUri += uri + "\n"
 	}
+	rows.Close()
+
+	log.Println("DB done.")
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -54,6 +56,7 @@ func main() {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 
+	log.Println("Run peco.")
 	err2 := cmd.Run()
 	if err2 != nil {
 		log.Fatal(2, fmt.Sprint(err2)+stderr.String())
