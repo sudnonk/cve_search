@@ -86,7 +86,7 @@ func getCveData(cpeUri string) (string, error) {
 	defer cmd.Process.Kill()
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	return string(out), nil
