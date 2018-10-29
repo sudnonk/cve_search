@@ -36,7 +36,7 @@ AGAIN:
 		if errNum >= 10 {
 			log.Fatal(err2)
 		} else {
-			time.Sleep(3)
+			time.Sleep(3 * time.Second)
 			goto AGAIN
 		}
 	}
