@@ -23,7 +23,7 @@ func main() {
 
 	cpeUri := string(out)
 
-	cmd := exec.Command("go-cve-dictionary", "server", "&")
+	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath)
 	cmd.Start()
 	log.Println(cmd.Process.Pid)
 	log.Println(cpeUri)
