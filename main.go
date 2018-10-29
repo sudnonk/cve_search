@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/mattn/go-pipeline"
 	"log"
 	"os/exec"
@@ -12,21 +13,45 @@ const (
 	CveDbPath = "/root/cve.sqlite3"
 )
 
+type CVE struct {
+	CveID             string
+	Cvss2BaseScore    string
+	Cvss2Severity     string
+	Cvss3BaseScore    string
+	Cvss3BaseSeverity string
+}
+
 func main() {
+	cpeUri, err := getCpeUri()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cveData, err2 := getCveData(cpeUri)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	log.Println(cveData)
+}
+
+func getCpeUri() (string, error) {
 	out, err := pipeline.Output(
 		[]string{"sqlite3", CpeDbPath, "SELECT cpe_uri FROM categorized_cpes"},
 		[]string{"peco"},
 	)
 	if err != nil {
-		log.Fatal(out, err)
+		return "", err
 	}
 
-	cpeUri := string(out)
+	return string(out), nil
+}
 
+func getCveData(cpeUri string) ([]CVE, error) {
 	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
 	cmd.Start()
 	body := "{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}"
-	out2, err2 := pipeline.Output(
+	out, err := pipeline.Output(
 		[]string{
 			"curl",
 			"-v",
@@ -47,9 +72,28 @@ func main() {
 	)
 	defer cmd.Process.Kill()
 
-	if err2 != nil {
-		log.Fatal(out2, err2)
+	if err != nil {
+		return nil, err
 	}
 
-	log.Println(string(out2))
+	var lines []string
+	lines = strings.Split(string(out), "\n")
+
+	if len(lines)%5 != 0 {
+		return nil, errors.New("invalid number of lines")
+	}
+
+	var cves []CVE
+	for i := 0; i < len(lines); i += 5 {
+		cve := CVE{
+			lines[i],
+			lines[i+1],
+			lines[i+2],
+			lines[i+3],
+			lines[i+4],
+		}
+		cves = append(cves, cve)
+	}
+
+	return cves, nil
 }
