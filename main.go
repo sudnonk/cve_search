@@ -102,6 +102,7 @@ func parseJson2CVE(json string) ([]CVE, error) {
 	if len(lines)%5 != 0 {
 		//return nil, errors.New("invalid number of lines　" + string(len(lines)))
 	}
+	log.Println(len(lines))
 
 	var cves []CVE
 	for i := 0; i < len(lines); i += 5 {
