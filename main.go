@@ -37,6 +37,7 @@ func main() {
 			return
 		}
 
+		fmt.Println(uri)
 		cpeUri += uri + "\n"
 	}
 
