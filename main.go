@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 const (
@@ -35,6 +36,7 @@ AGAIN:
 		if errNum >= 10 {
 			log.Fatal(err2)
 		} else {
+			time.Sleep(3)
 			goto AGAIN
 		}
 	}
