@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
+	"os/exec"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -37,40 +40,24 @@ func main() {
 			return
 		}
 
-		fmt.Println(uri)
 		cpeUri += uri + "\n"
 	}
 
-	fmt.Println(cpeUri)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
 
-	/*
+	cmd := exec.Command("peco")
+	stdin, _ := cmd.StdinPipe()
+	io.WriteString(stdin, cpeUri)
+	stdin.Close()
 
-		var out bytes.Buffer
-		var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
 
-		cmd := exec.Command("sqlite3 ", CpeDbPath, " 'select cpe_uri from categorized_cpes'")
-		cmd.Stdout = &out
-		cmd.Stderr = &stderr
+	err2 := cmd.Run()
+	if err2 != nil {
+		log.Fatal(2, fmt.Sprint(err2)+stderr.String())
+	}
 
-		err := cmd.Run()
-		if err != nil {
-			log.Fatal(1, fmt.Sprint(err)+stderr.String())
-			return
-		}
-
-		cmd = exec.Command("peco")
-		stdin, _ := cmd.StdinPipe()
-		io.WriteString(stdin, out.String())
-		stdin.Close()
-
-		cmd.Stdout = &out
-		cmd.Stderr = &stderr
-
-		err2 := cmd.Run()
-		if err2 != nil {
-			log.Fatal(2, fmt.Sprint(err2)+stderr.String())
-		}
-
-		fmt.Println(out)
-	*/
+	fmt.Println(out)
 }
