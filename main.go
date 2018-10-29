@@ -15,7 +15,7 @@ const (
 func main() {
 	out, err := exec.Command("sqlite3", CpeDbPath, "'select cpe_uri from categorized_cpes'").Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(out, err)
 	}
 
 	cmd := exec.Command("peco")
@@ -25,7 +25,7 @@ func main() {
 
 	out2, err2 := cmd.Output()
 	if err2 != nil {
-		log.Fatal(err2)
+		log.Fatal(out2, err2)
 	}
 
 	fmt.Println(out2)
