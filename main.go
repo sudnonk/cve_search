@@ -24,9 +24,11 @@ func main() {
 
 	cmd := exec.Command("go-cpe-dictionary", "server")
 	cmd.Start()
+	log.Println(cmd.Process.Pid)
 	out2, err2 := pipeline.Output(
 		[]string{"curl", "-v", "-H \"Accept: application/json\"", "-H \"Content-type: application/json\"", "-X POST", "-d '{\"name\": \"" + cpeUri + "\"}'", "http://localhost:1323/cpes"},
 	)
+	log.Println(&cmd.Process.Pid)
 	defer cmd.Process.Kill()
 
 	if err != nil {
