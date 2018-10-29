@@ -40,6 +40,10 @@ func main() {
 			body,
 			"http://localhost:1323/cpes",
 		},
+		[]string{
+			"jq",
+			".[] | .NvdJSON | .CveID,.Cvss3.BaseScore,.Cvss3.BaseSeverity",
+		},
 	)
 	defer cmd.Process.Kill()
 
@@ -47,21 +51,5 @@ func main() {
 		log.Fatal(out2, err2)
 	}
 
-	cve := string(out2)
-	out3, err3 := pipeline.Output(
-		[]string{
-			"echo",
-			cve,
-		},
-		[]string{
-			"jq",
-			".[] | .Nvd",
-		},
-	)
-
-	if err3 != nil {
-		log.Fatal(out3, err3)
-	}
-
-	log.Println(string(out3))
+	log.Println(string(out2))
 }
