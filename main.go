@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/mattn/go-pipeline"
+	"io"
 	"log"
+	"os/exec"
 )
 
 const (
@@ -12,13 +13,20 @@ const (
 )
 
 func main() {
-	out, err := pipeline.Output(
-		[]string{"sqlite3", CpeDbPath, "'select cpe_uri from categorized_cpes'"},
-		[]string{"peco"},
-	)
+	out, err := exec.Command("sqlite3", CpeDbPath, "'select cpe_uri from categorized_cpes'").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(string(out))
+	cmd := exec.Command("peco")
+	stdin, _ := cmd.StdinPipe()
+	io.WriteString(stdin, string(out))
+	stdin.Close()
+
+	out2, err2 := cmd.Output()
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	fmt.Println(out2)
 }
