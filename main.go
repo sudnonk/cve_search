@@ -31,7 +31,16 @@ func main() {
 	out2, err2 := pipeline.Output(
 		[]string{
 			"curl",
-			"-v -H \"Accept: application/json\" -H \"Content-type: application/json\" -X POST -d '{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}' http://localhost:1323/cpes",
+			"-v",
+			"-H",
+			"\"Accept: application/json\"",
+			"-H",
+			"\"Content-type: application/json\"",
+			"-X",
+			"POST",
+			"-d",
+			"'{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}'",
+			"http://localhost:1323/cpes",
 		},
 	)
 	log.Println(cmd.Process.Pid)
