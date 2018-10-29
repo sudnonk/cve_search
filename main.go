@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os/exec"
 )
@@ -21,7 +22,8 @@ func main() {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(1, out.String(), stderr.String())
+		log.Fatal(1, fmt.Sprint(err)+stderr.String())
+		return
 	}
 	/*
 		cmd = exec.Command("peco")
