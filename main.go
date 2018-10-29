@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"github.com/mattn/go-pipeline"
 	"log"
+	"os/exec"
 )
 
 const (
@@ -19,5 +19,20 @@ func main() {
 	if err != nil {
 		log.Fatal(out, err)
 	}
-	fmt.Println(string(out))
+
+	cpeUri := string(out)
+
+	cmd := exec.Command("go-cpe-dictionary", "server")
+	cmd.Start()
+	out2, err2 := pipeline.Output(
+		[]string{"curl", "-v", "-H \"Accept: application/json\"", "-H \"Content-type: application/json\"", "-X POST", "-d '{\"name\": \"" + cpeUri + "\"}'", "http://localhost:1323/cpes"},
+	)
+	cmd.Process.Kill()
+	cmd.Wait()
+
+	if err != nil {
+		log.Fatal(out2, err2)
+	}
+
+	log.Println(out2)
 }
