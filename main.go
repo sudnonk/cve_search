@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"io"
+	"bytes"
 	"log"
 	"os/exec"
 )
@@ -13,20 +12,28 @@ const (
 )
 
 func main() {
-	out, err := exec.Command("sqlite3", CpeDbPath, "'select cpe_uri from categorized_cpes'").Output()
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	cmd := exec.Command("sqlite3", CpeDbPath, "'select cpe_uri from categorized_cpes'")
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 	if err != nil {
-		log.Fatal(out, err)
+		log.Fatal(1, out, err)
 	}
+	/*
+		cmd = exec.Command("peco")
+		stdin, _ := cmd.StdinPipe()
+		io.WriteString(stdin, string(out))
+		stdin.Close()
 
-	cmd := exec.Command("peco")
-	stdin, _ := cmd.StdinPipe()
-	io.WriteString(stdin, string(out))
-	stdin.Close()
+		out2, err2 := cmd.Output()
+		if err2 != nil {
+			log.Fatal(2, out2, err2)
+		}
 
-	out2, err2 := cmd.Output()
-	if err2 != nil {
-		log.Fatal(out2, err2)
-	}
-
-	fmt.Println(out2)
+		fmt.Println(out2)
+	*/
 }
