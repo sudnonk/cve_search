@@ -108,7 +108,7 @@ func parseJson2CVE(json string) ([]CVE, error) {
 	log.Println(len(lines))
 
 	var cves []CVE
-	for i := 0; i < len(lines); i += 5 {
+	for i := 0; i < len(lines)-5; i += 5 {
 		cve := CVE{
 			lines[i],
 			lines[i+1],
