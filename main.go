@@ -23,7 +23,7 @@ func main() {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(1, fmt.Sprint(err)+stderr.String())
+		log.Fatal(1, fmt.Sprint(err)+out.String()+stderr.String())
 		return
 	}
 
