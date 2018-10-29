@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/mattn/go-pipeline"
 	"log"
 	"os/exec"
@@ -30,6 +31,8 @@ func main() {
 	errNum := 0
 	cmd := exec.Command("go-cve-dictionary", "server", "-dbpath", CveDbPath, "&")
 	cmd.Start()
+	fmt.Println("Starting go-cve-dictionary server...")
+	time.Sleep(5 * time.Second)
 AGAIN:
 	cveJson, err2 := getCveData(cpeUri)
 	if err2 != nil {
