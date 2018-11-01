@@ -121,7 +121,7 @@ func findCveIDs(pack Pack) []string {
 	var notFixedYet bool
 
 	if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
-		log.Println(err, pack.Name)
+		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 	}
 
 	rows2, err := db.Query(
