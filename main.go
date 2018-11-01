@@ -1,16 +1,20 @@
 package main
 
 import (
+	"bufio"
+	"errors"
+	"flag"
 	"fmt"
-	"github.com/mattn/go-pipeline"
 	"log"
-	"strings"
-	"time"
+	"os"
+	"os/exec"
+	"regexp"
 )
 
 const (
-	CpeDbPath = "/root/cpe.sqlite3"
-	CveDbPath = "/root/cve.sqlite3"
+	CpeDbPath  = "/root/vuln_scan/cpe.sqlite3"
+	CveDbPath  = "/root/vuln_scan/cve.sqlite3"
+	OvalDbPath = "/root/vuln_scan/oval.sqlite3"
 )
 
 type CVE struct {
@@ -21,97 +25,77 @@ type CVE struct {
 	Cvss3BaseSeverity string
 }
 
+type Pack struct {
+	Name    string
+	Version string
+	Release string
+	Arch    string
+}
+
 func main() {
-	cpeUri, err := getCpeUri()
+	var (
+		v     = flag.Int("redhat", 7, "RedHat 5 or 6 or 7")
+		fname = flag.String("filename", "", "Path to list of packages")
+	)
+	flag.Parse()
+	file, err := os.Open(*fname)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	errNum := 0
-AGAIN:
-	cveJson, err2 := getCveData(cpeUri)
-	if err2 != nil {
-		errNum++
-		//エラーが5回起きたらrecoverやめる
-		if errNum >= 5 {
-			log.Fatal(err2)
-		} else {
-			time.Sleep(3 * time.Second)
-			goto AGAIN
-		}
-	}
-
-	cves, err3 := parseJson2CVE(cveJson)
-	if err3 != nil {
-		log.Fatal(err3)
-	}
-
-	for _, cve := range cves {
-		if cve.Cvss2Severity == "HIGH" || cve.Cvss2Severity == "CRITICAL" {
-			fmt.Println("CveID: " + cve.CveID + " Severity: " + cve.Cvss2Severity)
-		}
-	}
-	fmt.Println("done,")
+	defer file.Close()
+	packs := parseFile(file)
+	findCvdIDs(packs, *v)
 
 }
 
-func getCpeUri() (string, error) {
-	out, err := pipeline.Output(
-		[]string{"sqlite3", CpeDbPath, "SELECT cpe_uri FROM categorized_cpes"},
-		[]string{"peco"},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return string(out), nil
-}
-
-func getCveData(cpeUri string) (string, error) {
-
-	body := "{\"name\": \"" + strings.TrimRight(cpeUri, "\n") + "\"}"
-	out, err := pipeline.Output(
-		[]string{
-			"curl",
-			"-H",
-			"Accept: application/json",
-			"-H",
-			"Content-type: application/json",
-			"-X",
-			"POST",
-			"-d",
-			body,
-			"http://localhost:1323/cpes",
-		},
-		[]string{
-			"jq",
-			"-r",
-			".[] | .NvdJSON | .CveID,.Cvss2.BaseScore,.Cvss2.Severity,.Cvss3.BaseScore,.Cvss3.BaseSeverity",
-		},
-	)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(out), nil
-}
-
-func parseJson2CVE(json string) ([]CVE, error) {
-	var lines []string
-	lines = strings.Split(json, "\n")
-
-	var cves []CVE
-	for i := 0; i < len(lines)-5; i += 5 {
-		cve := CVE{
-			lines[i],
-			lines[i+1],
-			lines[i+2],
-			lines[i+3],
-			lines[i+4],
+func parseFile(file *os.File) []Pack {
+	var packs []Pack
+	s := bufio.NewScanner(file)
+	for s.Scan() {
+		l := s.Text()
+		pack, err := parsePackage(l)
+		if err != nil {
+			log.Println(err)
 		}
-		cves = append(cves, cve)
+
+		packs = append(packs, pack)
+	}
+	if s.Err() != nil {
+		log.Fatal(s.Err())
 	}
 
-	return cves, nil
+	return packs
+}
+
+//openssl-1.0.1e-30.el6_6.11.x86_64 -> openssl 1.0.1e 30.el6_6 11 x86_64
+func parsePackage(p string) (Pack, error) {
+	r := regexp.MustCompile(`(.+)-(\d+.*)-(\d+.*)\.(x86_64|noarch|i386)`)
+	re := r.FindStringSubmatch(p)
+	if len(re) > 0 {
+		fmt.Println(re[1])
+	} else {
+		return Pack{}, errors.New("Failed to parse package: " + p)
+	}
+
+	return Pack{
+		re[1],
+		re[2],
+		re[3],
+		re[4],
+	}, nil
+}
+
+func findCvdIDs(packs []Pack, v int) []string {
+	for _, pack := range packs {
+		cmd := exec.Command("goval-dictionary", "select", "-by-package", "redhat", string(v), pack.Name)
+		out, err := cmd.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(out)
+	}
+
+	var strs []string
+	return strs
 }
