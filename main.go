@@ -94,7 +94,7 @@ func findCvdIDs(packs []Pack, v int) []string {
 		cmd.Stdout = &out
 		cmd.Stderr = &stderr
 
-		_, err := cmd.Output()
+		err := cmd.Run()
 		if err != nil {
 			log.Fatal(err)
 		}
