@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -88,12 +89,17 @@ func parsePackage(p string) (Pack, error) {
 func findCvdIDs(packs []Pack, v int) []string {
 	for _, pack := range packs {
 		cmd := exec.Command("goval-dictionary", "select", "-dbpath", OvalDbPath, "-by-package", "redhat", string(v), pack.Name)
-		out, err := cmd.Output()
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+
+		_, err := cmd.Output()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(string(out))
+		fmt.Println(out.String(), stderr.String())
 	}
 
 	var strs []string
