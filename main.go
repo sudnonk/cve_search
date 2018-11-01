@@ -2,14 +2,15 @@ package main
 
 import (
 	"bufio"
-	"bytes"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -20,9 +21,9 @@ const (
 
 type CVE struct {
 	CveID             string
-	Cvss2BaseScore    string
+	Cvss2BaseScore    float32
 	Cvss2Severity     string
-	Cvss3BaseScore    string
+	Cvss3BaseScore    float32
 	Cvss3BaseSeverity string
 }
 
@@ -33,9 +34,13 @@ type Pack struct {
 	Arch    string
 }
 
+type Result struct {
+	Pack Pack
+	CVEs map[string]CVE
+}
+
 func main() {
 	var (
-		v     = flag.String("redhat", "7", "RedHat 5 or 6 or 7")
 		fname = flag.String("filename", "", "Path to list of packages")
 	)
 	flag.Parse()
@@ -45,8 +50,23 @@ func main() {
 	}
 	defer file.Close()
 	packs := parseFile(file)
-	findCvdIDs(packs, *v)
 
+	CVEs := make(map[string]CVE)
+	var results []Result
+	for _, pack := range packs {
+		result := Result{Pack: pack}
+		for _, cveID := range findCveIDs(pack) {
+			if cve, ok := CVEs[cveID]; ok {
+				result.CVEs[cveID] = cve
+			} else {
+				CVEs[cveID] = fillCVE(cveID)
+				result.CVEs[cveID] = cve
+			}
+		}
+		results = append(results, result)
+	}
+
+	fmt.Println(results)
 }
 
 func parseFile(file *os.File) []Pack {
@@ -85,22 +105,91 @@ func parsePackage(p string) (Pack, error) {
 	}, nil
 }
 
-func findCvdIDs(packs []Pack, v string) []string {
-	for _, pack := range packs {
-		cmd := exec.Command("goval-dictionary", "select", "-dbpath", OvalDbPath, "-by-package", "redhat", string(v), pack.Name)
-		var out bytes.Buffer
-		var stderr bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &stderr
-
-		err := cmd.Run()
-		if err != nil {
-			log.Fatal(err, stderr.String())
-		}
-
-		fmt.Println(out.String())
+func findCveIDs(pack Pack) []string {
+	db, err := sql.Open("sqlite3", OvalDbPath)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	var strs []string
-	return strs
+	rows := db.QueryRow(
+		`select definition_id,version,not_fixed_yet from packages where name = "?" and version like '%?'`,
+		pack.Name, pack.Version+"-"+pack.Release,
+	)
+
+	var DefinitionID int
+	var version string
+	var notFixedYet bool
+
+	if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
+		log.Fatal(err, pack.Name)
+	}
+
+	rows2, err := db.Query(
+		`select cve_id from cves where advisory_id = (select id from advisories where definition_id = ?)`,
+		DefinitionID,
+	)
+	if err != nil {
+		log.Fatal(err, pack.Name)
+	}
+	defer rows2.Close()
+
+	var cveIDs []string
+	for rows2.Next() {
+		var cveID string
+		if err := rows2.Scan(&cveID); err != nil {
+			log.Fatal(err, pack.Name)
+		} else {
+			cveIDs = append(cveIDs, cveID)
+		}
+	}
+
+	if err := rows2.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return cveIDs
+}
+
+func fillCVE(cveID string) CVE {
+	db, err := sql.Open("sqlite3", CveDbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	nvdRow := db.QueryRow(
+		`select id from nvd_jsons where cveid = ?`,
+		cveID,
+	)
+	var nvdJsonId int
+	if err := nvdRow.Scan(&nvdJsonId); err != nil {
+		log.Fatal(err, cveID)
+	}
+
+	cvss3 := db.QueryRow(
+		`select base_score,base_severity from cvss3 where nvd_json_id = ?`,
+		nvdJsonId,
+	)
+	var Cvss3BaseScore float32
+	var Cvss3BaseSeverity string
+	if err := cvss3.Scan(&Cvss3BaseScore, &Cvss3BaseSeverity); err != nil {
+		log.Fatal(err, cveID)
+	}
+
+	cvss2 := db.QueryRow(
+		`select base_score,severity from cvss2 where nvd_json_id = ?`,
+		nvdJsonId,
+	)
+	var Cvss2BaseScore float32
+	var Cvss2Severity string
+	if err := cvss2.Scan(&Cvss2BaseScore, &Cvss2Severity); err != nil {
+		log.Fatal(err, cveID)
+	}
+
+	return CVE{
+		CveID:             cveID,
+		Cvss2BaseScore:    Cvss2BaseScore,
+		Cvss2Severity:     Cvss2Severity,
+		Cvss3BaseScore:    Cvss3BaseScore,
+		Cvss3BaseSeverity: Cvss3BaseSeverity,
+	}
 }
