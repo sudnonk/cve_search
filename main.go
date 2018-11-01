@@ -93,7 +93,7 @@ func findCvdIDs(packs []Pack, v int) []string {
 			log.Fatal(err)
 		}
 
-		fmt.Println(out)
+		fmt.Println(string(out))
 	}
 
 	var strs []string
