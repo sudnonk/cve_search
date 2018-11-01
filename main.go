@@ -35,7 +35,7 @@ type Pack struct {
 
 func main() {
 	var (
-		v     = flag.Int("redhat", 7, "RedHat 5 or 6 or 7")
+		v     = flag.String("redhat", "7", "RedHat 5 or 6 or 7")
 		fname = flag.String("filename", "", "Path to list of packages")
 	)
 	flag.Parse()
@@ -57,6 +57,7 @@ func parseFile(file *os.File) []Pack {
 		pack, err := parsePackage(l)
 		if err != nil {
 			log.Println(err)
+			continue
 		}
 
 		packs = append(packs, pack)
@@ -72,9 +73,7 @@ func parseFile(file *os.File) []Pack {
 func parsePackage(p string) (Pack, error) {
 	r := regexp.MustCompile(`(.+)-(\d+.*)-(\d+.*)\.(x86_64|noarch|i386)`)
 	re := r.FindStringSubmatch(p)
-	if len(re) > 0 {
-		fmt.Println(re[1])
-	} else {
+	if len(re) != 5 {
 		return Pack{}, errors.New("Failed to parse package: " + p)
 	}
 
@@ -86,7 +85,7 @@ func parsePackage(p string) (Pack, error) {
 	}, nil
 }
 
-func findCvdIDs(packs []Pack, v int) []string {
+func findCvdIDs(packs []Pack, v string) []string {
 	for _, pack := range packs {
 		cmd := exec.Command("goval-dictionary", "select", "-dbpath", OvalDbPath, "-by-package", "redhat", string(v), pack.Name)
 		var out bytes.Buffer
@@ -96,10 +95,10 @@ func findCvdIDs(packs []Pack, v int) []string {
 
 		err := cmd.Run()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err, stderr.String())
 		}
 
-		fmt.Println(out.String(), stderr.String())
+		fmt.Println(out.String())
 	}
 
 	var strs []string
