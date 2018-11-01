@@ -87,7 +87,7 @@ func parsePackage(p string) (Pack, error) {
 
 func findCvdIDs(packs []Pack, v int) []string {
 	for _, pack := range packs {
-		cmd := exec.Command("goval-dictionary", "select", "-by-package", "redhat", string(v), pack.Name)
+		cmd := exec.Command("goval-dictionary", "select", "-by-package", "redhat", string(v), pack.Name, "-dbpath", OvalDbPath)
 		out, err := cmd.Output()
 		if err != nil {
 			log.Fatal(err)
