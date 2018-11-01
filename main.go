@@ -121,7 +121,7 @@ func findCveIDs(pack Pack) []string {
 	var notFixedYet bool
 
 	if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
-		log.Fatal(err, pack.Name)
+		log.Println(err, pack.Name)
 	}
 
 	rows2, err := db.Query(
@@ -129,7 +129,7 @@ func findCveIDs(pack Pack) []string {
 		DefinitionID,
 	)
 	if err != nil {
-		log.Fatal(err, pack.Name)
+		log.Println(err, pack.Name)
 	}
 	defer rows2.Close()
 
@@ -137,7 +137,7 @@ func findCveIDs(pack Pack) []string {
 	for rows2.Next() {
 		var cveID string
 		if err := rows2.Scan(&cveID); err != nil {
-			log.Fatal(err, pack.Name)
+			log.Println(err, pack.Name)
 		} else {
 			cveIDs = append(cveIDs, cveID)
 		}
@@ -162,7 +162,7 @@ func fillCVE(cveID string) CVE {
 	)
 	var nvdJsonId int
 	if err := nvdRow.Scan(&nvdJsonId); err != nil {
-		log.Fatal(err, cveID)
+		log.Println(err, cveID)
 	}
 
 	cvss3 := db.QueryRow(
@@ -172,7 +172,7 @@ func fillCVE(cveID string) CVE {
 	var Cvss3BaseScore float32
 	var Cvss3BaseSeverity string
 	if err := cvss3.Scan(&Cvss3BaseScore, &Cvss3BaseSeverity); err != nil {
-		log.Fatal(err, cveID)
+		log.Println(err, cveID)
 	}
 
 	cvss2 := db.QueryRow(
@@ -182,7 +182,7 @@ func fillCVE(cveID string) CVE {
 	var Cvss2BaseScore float32
 	var Cvss2Severity string
 	if err := cvss2.Scan(&Cvss2BaseScore, &Cvss2Severity); err != nil {
-		log.Fatal(err, cveID)
+		log.Println(err, cveID)
 	}
 
 	return CVE{
