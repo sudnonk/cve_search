@@ -125,6 +125,7 @@ func findCveIDs(pack Pack) []string {
 		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 	}
 	defer rows.Close()
+	log.Println(rows)
 
 	var cveIDs []string
 	for rows.Next() {
