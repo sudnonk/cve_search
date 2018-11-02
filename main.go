@@ -89,9 +89,10 @@ func parseFile(file *os.File) []Pack {
 	return packs
 }
 
+var r = regexp.MustCompile(`(.+)-(\d+.*)-(\d+.*)\.(x86_64|noarch|i386)`)
+
 //openssl-1.0.1e-30.el6_6.11.x86_64 -> openssl 1.0.1e 30.el6_6 11 x86_64
 func parsePackage(p string) (Pack, error) {
-	r := regexp.MustCompile(`(.+)-(\d+.*)-(\d+.*)\.(x86_64|noarch|i386)`)
 	re := r.FindStringSubmatch(p)
 	if len(re) != 5 {
 		return Pack{}, errors.New("Failed to parse package: " + p)
@@ -111,40 +112,47 @@ func findCveIDs(pack Pack) []string {
 		log.Fatal(err)
 	}
 
-	rows := db.QueryRow(
-		`select definition_id,version,not_fixed_yet from packages where name = "?" and version like '%?'`,
-		pack.Name, pack.Version,
-	)
-
-	var DefinitionID int
-	var version string
-	var notFixedYet bool
-
-	if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
-		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
-	}
-
-	rows2, err := db.Query(
-		`select cve_id from cves where advisory_id = (select id from advisories where definition_id = ?)`,
-		DefinitionID,
+	rows, err := db.Query(
+		`select definition_id,version,not_fixed_yet from packages where name = '?' and version like '%?'`,
+		pack.Name, pack.Version+"-"+pack.Release,
 	)
 	if err != nil {
-		log.Println(err, pack.Name)
+		log.Fatal(err)
 	}
-	defer rows2.Close()
+	defer rows.Close()
 
 	var cveIDs []string
-	for rows2.Next() {
-		var cveID string
-		if err := rows2.Scan(&cveID); err != nil {
-			log.Println(err, pack.Name)
-		} else {
-			cveIDs = append(cveIDs, cveID)
-		}
-	}
+	for rows.Next() {
+		var DefinitionID int
+		var version string
+		var notFixedYet bool
 
-	if err := rows2.Err(); err != nil {
-		log.Fatal(err)
+		if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
+			log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
+		}
+
+		rows2, err := db.Query(
+			`select cve_id from cves where advisory_id = (select id from advisories where definition_id = ?)`,
+			DefinitionID,
+		)
+		if err != nil {
+			log.Println(err, pack.Name)
+		}
+
+		for rows2.Next() {
+			var cveID string
+			if err := rows2.Scan(&cveID); err != nil {
+				log.Println(err, pack.Name)
+			} else {
+				cveIDs = append(cveIDs, cveID)
+			}
+		}
+
+		if err := rows2.Err(); err != nil {
+			log.Fatal(err)
+		}
+
+		rows2.Close()
 	}
 
 	return cveIDs
