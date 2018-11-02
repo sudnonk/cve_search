@@ -230,7 +230,7 @@ func PrintResult(r Result) {
 		`Package: ` + r.Pack.Name + "-" + r.Pack.Version + "-" + r.Pack.Release + "." + r.Pack.Arch + "\n",
 	)
 
-	fmt.Println(r.CVEs)
+	fmt.Println(r)
 	for cveID, cve := range r.CVEs {
 		fmt.Println(
 			cveID + "\n" + "  " +
