@@ -116,7 +116,7 @@ func findCveIDs(pack Pack) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	row, err := db.Query(`select * from packages where name = 'openssl'`)
+	row, err := db.Query(`select * from packages where name = '?'`, "openssl")
 	for row.Next() {
 		var (
 			a string
