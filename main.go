@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,60 +21,77 @@ const (
 )
 
 type CVE struct {
-	CveID             string
-	Cvss2BaseScore    float32
-	Cvss2Severity     string
-	Cvss3BaseScore    float32
-	Cvss3BaseSeverity string
+	CveID             string  `json:"cve_id"`
+	Cvss2BaseScore    float32 `json:"cvss_2_base_score"`
+	Cvss2Severity     string  `json:"cvss_2_severity"`
+	Cvss3BaseScore    float32 `json:"cvss_3_base_score"`
+	Cvss3BaseSeverity string  `json:"cvss_3_base_severity"`
 }
 
 type Pack struct {
-	Name    string
-	Version string
-	Release string
-	Arch    string
+	Name    string `json:"pack_name"`
+	Version string `json:"pack_version"`
+	Release string `json:"pack_release"`
+	Arch    string `json:"pack_arch"`
 }
 
 type Result struct {
-	Pack Pack
-	CVEs map[string]CVE
+	Pack Pack           `json:"packages"`
+	CVEs map[string]CVE `json:"cves"`
 }
 
 var (
 	OvalDB *sql.DB
 	CveDB  *sql.DB
 )
+var debug debugT
+
+type debugT bool
+
+func (d debugT) Println(msg ...interface{}) {
+	if d {
+		log.Println(msg...)
+	}
+}
+func (d debugT) Fatal(err error) {
+	if d {
+		log.Fatal(err)
+	}
+}
 
 func main() {
 	var (
-		fname = flag.String("filename", "", "Path to list of packages")
+		fname   = flag.String("filename", "", "Path to list of packages")
+		verbose = flag.Bool("v", false, "Debug mode")
 	)
 	flag.Parse()
+	debug = debugT(*verbose)
+
 	file, err := os.Open(*fname)
 	if err != nil {
-		log.Fatal(err)
+		debug.Fatal(err)
 	}
 	defer file.Close()
-	log.Println("Parse file start.")
+	debug.Println("Parse file start.")
 	packs := parseFile(file)
-	log.Println("Parse file end.")
+	debug.Println("Parse file end.")
 
-	log.Println("Connecting DB.")
+	debug.Println("Connecting DB.")
 	OvalDB, err = sql.Open("sqlite3", OvalDbPath)
 	if err != nil {
-		log.Fatal(err)
+		debug.Fatal(err)
 	}
 	CveDB, err = sql.Open("sqlite3", CveDbPath)
 	if err != nil {
-		log.Fatal(err)
+		debug.Fatal(err)
 	}
 
-	log.Println("Find CVEs start.")
+	debug.Println("Find CVEs start.")
 	CVEs := make(map[string]CVE)
 	var results []Result
 	for _, pack := range packs {
 		result := Result{Pack: pack, CVEs: map[string]CVE{}}
-		log.Println("Finding CveIDs for " + pack.Name)
+		debug.Println("Finding CveIDs for " + pack.Name)
 		for _, cveID := range findCveIDs(pack) {
 			log.Println("Finding CVEs for " + cveID)
 			if cve, ok := CVEs[cveID]; ok {
@@ -85,13 +103,13 @@ func main() {
 		}
 		results = append(results, result)
 	}
-	log.Println("Find CVEs end.")
+	debug.Println("Find CVEs end.")
 
-	for _, result := range results {
-		if result.Pack.Name == "openssl" {
-			PrintResult(result)
-		}
+	oJson, err := json.Marshal(&results)
+	if err != nil {
+		debug.Fatal(err)
 	}
+	fmt.Println(string(oJson))
 }
 
 func parseFile(file *os.File) []Pack {
@@ -101,14 +119,14 @@ func parseFile(file *os.File) []Pack {
 		l := s.Text()
 		pack, err := parsePackage(l)
 		if err != nil {
-			log.Println(err)
+			debug.Println(err)
 			continue
 		}
 
 		packs = append(packs, pack)
 	}
 	if s.Err() != nil {
-		log.Fatal(s.Err())
+		debug.Fatal(s.Err())
 	}
 
 	return packs
@@ -137,7 +155,7 @@ func findCveIDs(pack Pack) []string {
 		pack.Name, "%"+pack.Version+"-"+pack.Release,
 	)
 	if err != nil {
-		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
+		debug.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 	}
 	defer rows.Close()
 
@@ -148,7 +166,7 @@ func findCveIDs(pack Pack) []string {
 		var notFixedYet bool
 
 		if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
-			log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
+			debug.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 		}
 
 		rows2, err := OvalDB.Query(
@@ -156,26 +174,26 @@ func findCveIDs(pack Pack) []string {
 			DefinitionID,
 		)
 		if err != nil {
-			log.Println(err, pack.Name, DefinitionID)
+			debug.Println(err, pack.Name, DefinitionID)
 		}
 
 		for rows2.Next() {
 			var cveID string
 			if err := rows2.Scan(&cveID); err != nil {
-				log.Println(err, pack.Name)
+				debug.Println(err, pack.Name)
 			} else {
 				cveIDs = append(cveIDs, cveID)
 			}
 		}
 
 		if err := rows2.Err(); err != nil {
-			log.Fatal(err)
+			debug.Fatal(err)
 		}
 
 		rows2.Close()
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		debug.Fatal(err)
 	}
 
 	return cveIDs
@@ -189,7 +207,7 @@ func fillCVE(cveID string) CVE {
 	)
 	var nvdJsonId int
 	if err := nvdRow.Scan(&nvdJsonId); err != nil {
-		log.Println(err, cveID, "json")
+		debug.Println(err, cveID, "json")
 	}
 
 	cvss3 := CveDB.QueryRow(
@@ -199,7 +217,7 @@ func fillCVE(cveID string) CVE {
 	var Cvss3BaseScore float32
 	var Cvss3BaseSeverity string
 	if err := cvss3.Scan(&Cvss3BaseScore, &Cvss3BaseSeverity); err != nil {
-		log.Println(err, nvdJsonId, "CVSS3")
+		debug.Println(err, nvdJsonId, "CVSS3")
 		Cvss3BaseScore = 0
 		Cvss3BaseSeverity = ""
 	}
@@ -211,7 +229,7 @@ func fillCVE(cveID string) CVE {
 	var Cvss2BaseScore float32
 	var Cvss2Severity string
 	if err := cvss2.Scan(&Cvss2BaseScore, &Cvss2Severity); err != nil {
-		log.Println(err, nvdJsonId, "CVSS2")
+		debug.Println(err, nvdJsonId, "CVSS2")
 		Cvss2BaseScore = 0
 		Cvss2Severity = ""
 	}
@@ -230,7 +248,6 @@ func PrintResult(r Result) {
 		`Package: ` + r.Pack.Name + "-" + r.Pack.Version + "-" + r.Pack.Release + "." + r.Pack.Arch + "\n",
 	)
 
-	fmt.Println(r, r.CVEs)
 	for cveID, cve := range r.CVEs {
 		fmt.Println(
 			cveID+"\n"+"  "+
