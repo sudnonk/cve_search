@@ -66,7 +66,7 @@ func main() {
 	)
 	flag.Parse()
 	debug = debugT(*verbose)
-	log.Println(*verbose)
+	log.Println(debug)
 
 	file, err := os.Open(*fname)
 	if err != nil {
