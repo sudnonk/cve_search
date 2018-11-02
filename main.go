@@ -113,7 +113,7 @@ func findCveIDs(pack Pack) []string {
 
 	rows := db.QueryRow(
 		`select definition_id,version,not_fixed_yet from packages where name = "?" and version like '%?'`,
-		pack.Name, pack.Version+"-"+pack.Release,
+		pack.Name, pack.Version,
 	)
 
 	var DefinitionID int
