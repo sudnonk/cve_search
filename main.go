@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -66,7 +65,7 @@ func main() {
 		results = append(results, result)
 	}
 
-	fmt.Println(results)
+	//fmt.Println(results)
 }
 
 func parseFile(file *os.File) []Pack {
@@ -146,6 +145,7 @@ func findCveIDs(pack Pack) []string {
 			} else {
 				cveIDs = append(cveIDs, cveID)
 			}
+			log.Println(cveID)
 		}
 
 		if err := rows2.Err(); err != nil {
