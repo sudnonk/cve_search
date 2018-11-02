@@ -186,14 +186,6 @@ func fillCVE(cveID string) CVE {
 	if err := nvdRow.Scan(&nvdJsonId); err != nil {
 		log.Println(err, cveID, "json")
 	}
-	nvdRow2 := CveDB.QueryRow(
-		`select id from nvd_xmls where cve_id = ?`,
-		cveID,
-	)
-	var nvdXmlId int
-	if err := nvdRow2.Scan(&nvdXmlId); err != nil {
-		log.Println(err, cveID, "xml")
-	}
 
 	cvss3 := CveDB.QueryRow(
 		`select base_score,base_severity from cvss3 where nvd_json_id = ?`,
@@ -206,13 +198,13 @@ func fillCVE(cveID string) CVE {
 	}
 
 	cvss2 := CveDB.QueryRow(
-		`select base_score,severity from cvss2 where nvd_xml_id = ?`,
-		nvdXmlId,
+		`select base_score,severity from cvss2_extras where nvd_xml_id = ?`,
+		nvdJsonId,
 	)
 	var Cvss2BaseScore float32
 	var Cvss2Severity string
 	if err := cvss2.Scan(&Cvss2BaseScore, &Cvss2Severity); err != nil {
-		log.Println(err, nvdXmlId)
+		log.Println(err, nvdJsonId)
 	}
 
 	return CVE{
