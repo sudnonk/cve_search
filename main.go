@@ -71,7 +71,7 @@ func main() {
 	CVEs := make(map[string]CVE)
 	var results []Result
 	for _, pack := range packs {
-		result := Result{Pack: pack}
+		result := Result{Pack: pack, CVEs: map[string]CVE{}}
 		log.Println("Finding CveIDs for " + pack.Name)
 		for _, cveID := range findCveIDs(pack) {
 			log.Println("Finding CVEs for " + cveID)
