@@ -130,7 +130,7 @@ func parsePackage(p string) (Pack, error) {
 func findCveIDs(pack Pack) []string {
 	row, err := stmt.Query("openssl")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, 133)
 	}
 	defer row.Close()
 	for row.Next() {
@@ -142,12 +142,12 @@ func findCveIDs(pack Pack) []string {
 			e string
 		)
 		if err := row.Scan(&a, &b, &c, &d, &e); err != nil {
-			log.Fatal(err)
+			log.Fatal(err, 145)
 		}
 		log.Println(a, b, c, d, e)
 	}
 	if err := row.Err(); err != nil {
-		log.Fatal(err)
+		log.Fatal(err, 150)
 	}
 
 	return []string{""}
