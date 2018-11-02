@@ -233,8 +233,9 @@ func PrintResult(r Result) {
 	fmt.Println(r, r.CVEs)
 	for cveID, cve := range r.CVEs {
 		fmt.Println(
-			cveID + "\n" + "  " +
-				"CVSS3 Sevirity: " + cve.Cvss3BaseSeverity + "\n",
+			cveID+"\n"+"  "+
+				"CVSS3 Severity: "+cve.Cvss3BaseSeverity+"\n",
+			"CVSS2 Severity: "+cve.Cvss2Severity+"\n",
 		)
 	}
 }
