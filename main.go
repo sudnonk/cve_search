@@ -48,13 +48,18 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
+	log.Println("Parse file start.")
 	packs := parseFile(file)
+	log.Println("Parse file end.")
 
+	log.Println("Find CVEs start.")
 	CVEs := make(map[string]CVE)
 	var results []Result
 	for _, pack := range packs {
 		result := Result{Pack: pack}
+		log.Println("Finding CveIDs for " + pack.Name)
 		for _, cveID := range findCveIDs(pack) {
+			log.Println("Finding CVEs for " + cveID)
 			if cve, ok := CVEs[cveID]; ok {
 				result.CVEs[cveID] = cve
 			} else {
@@ -64,6 +69,7 @@ func main() {
 		}
 		results = append(results, result)
 	}
+	log.Println("Find CVEs end.")
 
 	//fmt.Println(results)
 }
