@@ -39,7 +39,8 @@ type Result struct {
 }
 
 var (
-	db *sql.DB
+	OvalDB *sql.DB
+	CveDB  *sql.DB
 )
 
 func main() {
@@ -57,7 +58,11 @@ func main() {
 	log.Println("Parse file end.")
 
 	log.Println("Connecting DB.")
-	db, err = sql.Open("sqlite3", OvalDbPath)
+	OvalDB, err = sql.Open("sqlite3", OvalDbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	CveDB, err = sql.Open("sqlite3", CveDbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,7 +127,7 @@ func parsePackage(p string) (Pack, error) {
 }
 
 func findCveIDs(pack Pack) []string {
-	rows, err := db.Query(
+	rows, err := OvalDB.Query(
 		`select definition_id,version,not_fixed_yet from packages where name = ? and version like ?`,
 		pack.Name, "%"+pack.Version+"-"+pack.Release,
 	)
@@ -130,7 +135,6 @@ func findCveIDs(pack Pack) []string {
 		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 	}
 	defer rows.Close()
-	log.Println(rows)
 
 	var cveIDs []string
 	for rows.Next() {
@@ -142,7 +146,7 @@ func findCveIDs(pack Pack) []string {
 			log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 		}
 
-		rows2, err := db.Query(
+		rows2, err := OvalDB.Query(
 			`select cve_id from cves where advisory_id = (select id from advisories where definition_id = ?)`,
 			DefinitionID,
 		)
@@ -157,7 +161,6 @@ func findCveIDs(pack Pack) []string {
 			} else {
 				cveIDs = append(cveIDs, cveID)
 			}
-			log.Println(pack.Name, cveID)
 		}
 
 		if err := rows2.Err(); err != nil {
@@ -175,12 +178,7 @@ func findCveIDs(pack Pack) []string {
 }
 
 func fillCVE(cveID string) CVE {
-	db, err := sql.Open("sqlite3", CveDbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	nvdRow := db.QueryRow(
+	nvdRow := CveDB.QueryRow(
 		`select id from nvd_jsons where cveid = ?`,
 		cveID,
 	)
@@ -189,7 +187,7 @@ func fillCVE(cveID string) CVE {
 		log.Println(err, cveID)
 	}
 
-	cvss3 := db.QueryRow(
+	cvss3 := CveDB.QueryRow(
 		`select base_score,base_severity from cvss3 where nvd_json_id = ?`,
 		nvdJsonId,
 	)
@@ -199,7 +197,7 @@ func fillCVE(cveID string) CVE {
 		log.Println(err, cveID)
 	}
 
-	cvss2 := db.QueryRow(
+	cvss2 := CveDB.QueryRow(
 		`select base_score,severity from cvss2 where nvd_json_id = ?`,
 		nvdJsonId,
 	)
