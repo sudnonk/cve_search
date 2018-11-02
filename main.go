@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -86,7 +87,11 @@ func main() {
 	}
 	log.Println("Find CVEs end.")
 
-	//fmt.Println(results)
+	for _, result := range results {
+		if result.Pack.Name == "openssl" {
+			fmt.Println(result)
+		}
+	}
 }
 
 func parseFile(file *os.File) []Pack {
@@ -194,7 +199,7 @@ func fillCVE(cveID string) CVE {
 	var Cvss3BaseScore float32
 	var Cvss3BaseSeverity string
 	if err := cvss3.Scan(&Cvss3BaseScore, &Cvss3BaseSeverity); err != nil {
-		log.Println(err, nvdJsonId)
+		log.Println(err, nvdJsonId, "CVSS3")
 		Cvss3BaseScore = 0
 		Cvss3BaseSeverity = ""
 	}
@@ -206,7 +211,7 @@ func fillCVE(cveID string) CVE {
 	var Cvss2BaseScore float32
 	var Cvss2Severity string
 	if err := cvss2.Scan(&Cvss2BaseScore, &Cvss2Severity); err != nil {
-		log.Println(err, nvdJsonId)
+		log.Println(err, nvdJsonId, "CVSS2")
 		Cvss2BaseScore = 0
 		Cvss2Severity = ""
 	}
