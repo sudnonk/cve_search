@@ -227,9 +227,10 @@ func fillCVE(cveID string) CVE {
 
 func PrintResult(r Result) {
 	fmt.Println(
-		`Package: ` + r.Pack.Name + "-" + r.Pack.Version + "-" + r.Pack.Release + "-" + r.Pack.Arch + "\n",
+		`Package: ` + r.Pack.Name + "-" + r.Pack.Version + "-" + r.Pack.Release + "." + r.Pack.Arch + "\n",
 	)
 
+	fmt.Println(r.CVEs)
 	for cveID, cve := range r.CVEs {
 		fmt.Println(
 			cveID + "\n" + "  " +
