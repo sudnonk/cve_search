@@ -116,7 +116,7 @@ func findCveIDs(pack Pack) []string {
 		pack.Name, pack.Version+"-"+pack.Release,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 	}
 	defer rows.Close()
 
@@ -135,7 +135,7 @@ func findCveIDs(pack Pack) []string {
 			DefinitionID,
 		)
 		if err != nil {
-			log.Println(err, pack.Name)
+			log.Println(err, pack.Name, DefinitionID)
 		}
 
 		for rows2.Next() {
@@ -145,7 +145,7 @@ func findCveIDs(pack Pack) []string {
 			} else {
 				cveIDs = append(cveIDs, cveID)
 			}
-			log.Println(cveID)
+			log.Println(pack.Name, cveID)
 		}
 
 		if err := rows2.Err(); err != nil {
@@ -153,6 +153,9 @@ func findCveIDs(pack Pack) []string {
 		}
 
 		rows2.Close()
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
 	}
 
 	return cveIDs
