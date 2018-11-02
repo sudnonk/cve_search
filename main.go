@@ -179,11 +179,19 @@ func findCveIDs(pack Pack) []string {
 
 func fillCVE(cveID string) CVE {
 	nvdRow := CveDB.QueryRow(
-		`select id from nvd_jsons where cveid = ?`,
+		`select id from nvd_jsons where cve_id = ?`,
 		cveID,
 	)
 	var nvdJsonId int
 	if err := nvdRow.Scan(&nvdJsonId); err != nil {
+		log.Println(err, cveID)
+	}
+	nvdRow2 := CveDB.QueryRow(
+		`select id from nvd_xmls where cve_id = ?`,
+		cveID,
+	)
+	var nvdXmlId int
+	if err := nvdRow2.Scan(&nvdXmlId); err != nil {
 		log.Println(err, cveID)
 	}
 
@@ -198,8 +206,8 @@ func fillCVE(cveID string) CVE {
 	}
 
 	cvss2 := CveDB.QueryRow(
-		`select base_score,severity from cvss2 where nvd_json_id = ?`,
-		nvdJsonId,
+		`select base_score,severity from cvss2 where nvd_xml_id = ?`,
+		nvdXmlId,
 	)
 	var Cvss2BaseScore float32
 	var Cvss2Severity string
