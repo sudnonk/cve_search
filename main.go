@@ -195,16 +195,20 @@ func fillCVE(cveID string) CVE {
 	var Cvss3BaseSeverity string
 	if err := cvss3.Scan(&Cvss3BaseScore, &Cvss3BaseSeverity); err != nil {
 		log.Println(err, nvdJsonId)
+		Cvss3BaseScore = 0
+		Cvss3BaseSeverity = ""
 	}
 
 	cvss2 := CveDB.QueryRow(
-		`select base_score,severity from cvss2_extras where nvd_xml_id = ?`,
+		`select base_score,severity from cvss2_extras where nvd_json_id = ?`,
 		nvdJsonId,
 	)
 	var Cvss2BaseScore float32
 	var Cvss2Severity string
 	if err := cvss2.Scan(&Cvss2BaseScore, &Cvss2Severity); err != nil {
 		log.Println(err, nvdJsonId)
+		Cvss2BaseScore = 0
+		Cvss2Severity = ""
 	}
 
 	return CVE{
