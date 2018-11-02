@@ -38,6 +38,11 @@ type Result struct {
 	CVEs map[string]CVE
 }
 
+var (
+	db   *sql.DB
+	stmt *sql.Stmt
+)
+
 func main() {
 	var (
 		fname = flag.String("filename", "", "Path to list of packages")
@@ -51,6 +56,17 @@ func main() {
 	log.Println("Parse file start.")
 	packs := parseFile(file)
 	log.Println("Parse file end.")
+
+	log.Println("Connecting DB.")
+	db, err = sql.Open("sqlite3", OvalDbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err = db.Prepare(`select * from packages where name = '?'`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
 
 	log.Println("Find CVEs start.")
 	CVEs := make(map[string]CVE)
@@ -112,15 +128,6 @@ func parsePackage(p string) (Pack, error) {
 }
 
 func findCveIDs(pack Pack) []string {
-	db, err := sql.Open("sqlite3", OvalDbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt, err := db.Prepare(`select * from packages where name = '?'`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
 	row, err := stmt.Query("openssl")
 	if err != nil {
 		log.Fatal(err)
