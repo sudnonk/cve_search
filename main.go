@@ -89,7 +89,7 @@ func main() {
 
 	for _, result := range results {
 		if result.Pack.Name == "openssl" {
-			fmt.Println(result)
+			PrintResult(result)
 		}
 	}
 }
@@ -222,5 +222,18 @@ func fillCVE(cveID string) CVE {
 		Cvss2Severity:     Cvss2Severity,
 		Cvss3BaseScore:    Cvss3BaseScore,
 		Cvss3BaseSeverity: Cvss3BaseSeverity,
+	}
+}
+
+func PrintResult(r Result) {
+	fmt.Println(
+		`Package: ` + r.Pack.Name + "-" + r.Pack.Version + "-" + r.Pack.Release + "-" + r.Pack.Arch + "\n",
+	)
+
+	for cveID, cve := range r.CVEs {
+		fmt.Println(
+			cveID + "\n" + "  " +
+				"CVSS3 Sevirity: " + cve.Cvss3BaseSeverity + "\n",
+		)
 	}
 }
