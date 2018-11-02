@@ -116,56 +116,73 @@ func findCveIDs(pack Pack) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	rows, err := db.Query(
-		`select definition_id,version,not_fixed_yet from packages where name = '?' and version like '%?'`,
-		pack.Name, pack.Version+"-"+pack.Release,
-	)
-	if err != nil {
-		log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
-	}
-	defer rows.Close()
-	log.Println(rows)
-
-	var cveIDs []string
-	for rows.Next() {
-		var DefinitionID int
-		var version string
-		var notFixedYet bool
-
-		if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
-			log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
+	row, err := db.Query(`select * from packages`)
+	for row.Next() {
+		var (
+			a string
+			b string
+			c string
+			d string
+			e string
+		)
+		if err := row.Scan(&a, &b, &c, &d, &e); err != nil {
+			log.Fatal(err)
 		}
+		log.Println(a, b, c, d, e)
+	}
 
-		rows2, err := db.Query(
-			`select cve_id from cves where advisory_id = (select id from advisories where definition_id = ?)`,
-			DefinitionID,
+	return []string{""}
+	/*
+		rows, err := db.Query(
+			`select definition_id,version,not_fixed_yet from packages where name = '?' and version like '%?'`,
+			pack.Name, pack.Version+"-"+pack.Release,
 		)
 		if err != nil {
-			log.Println(err, pack.Name, DefinitionID)
+			log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 		}
+		defer rows.Close()
+		log.Println(rows)
 
-		for rows2.Next() {
-			var cveID string
-			if err := rows2.Scan(&cveID); err != nil {
-				log.Println(err, pack.Name)
-			} else {
-				cveIDs = append(cveIDs, cveID)
+		var cveIDs []string
+		for rows.Next() {
+			var DefinitionID int
+			var version string
+			var notFixedYet bool
+
+			if err := rows.Scan(&DefinitionID, &version, &notFixedYet); err != nil {
+				log.Println(err, pack.Name, pack.Version+"-"+pack.Release)
 			}
-			log.Println(pack.Name, cveID)
-		}
 
-		if err := rows2.Err(); err != nil {
+			rows2, err := db.Query(
+				`select cve_id from cves where advisory_id = (select id from advisories where definition_id = ?)`,
+				DefinitionID,
+			)
+			if err != nil {
+				log.Println(err, pack.Name, DefinitionID)
+			}
+
+			for rows2.Next() {
+				var cveID string
+				if err := rows2.Scan(&cveID); err != nil {
+					log.Println(err, pack.Name)
+				} else {
+					cveIDs = append(cveIDs, cveID)
+				}
+				log.Println(pack.Name, cveID)
+			}
+
+			if err := rows2.Err(); err != nil {
+				log.Fatal(err)
+			}
+
+			rows2.Close()
+		}
+		if err := rows.Err(); err != nil {
 			log.Fatal(err)
 		}
 
-		rows2.Close()
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return cveIDs
+		return cveIDs
+	*/
 }
 
 func fillCVE(cveID string) CVE {
