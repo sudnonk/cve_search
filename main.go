@@ -120,7 +120,12 @@ func findCveIDs(pack Pack) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer stmt.Close()
 	row, err := stmt.Query("openssl")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer row.Close()
 	for row.Next() {
 		var (
 			a string
@@ -133,6 +138,9 @@ func findCveIDs(pack Pack) []string {
 			log.Fatal(err)
 		}
 		log.Println(a, b, c, d, e)
+	}
+	if err := row.Err(); err != nil {
+		log.Fatal(err)
 	}
 
 	return []string{""}
