@@ -128,7 +128,7 @@ func parsePackage(p string) (Pack, error) {
 }
 
 func findCveIDs(pack Pack) []string {
-	row, err := db.Query(`select * from packages where name = '?'`, "openssl")
+	row, err := db.Query(`select * from packages where name = ?`, "openssl")
 	if err != nil {
 		log.Fatal(err, 133)
 	}
