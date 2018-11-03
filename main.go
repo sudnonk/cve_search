@@ -71,13 +71,14 @@ func main() {
 	}
 
 	app.Action = func(ctx *cli.Context) error {
-		var (
-			fname   = flag.String("filename", "", "Path to list of packages")
-			verbose = flag.Bool("v", false, "Debug mode")
-		)
+		fname := ctx.String("filename")
+		verbose := ctx.Bool("verbose")
+		severity := ctx.StringSlice("severity")
+
+		log.Println(severity)
 
 		flag.Parse()
-		debug = debugT(*verbose)
+		debug = debugT(verbose)
 
 		packs := parseFile(fname)
 		results := findCVEs(packs)
@@ -95,14 +96,18 @@ func main() {
 			Name:  "filename, f",
 			Usage: "Find from the list in `PATH`",
 		},
+		cli.StringSliceFlag{
+			Name:  "severity, s",
+			Usage: "Severity that you want to find. NONE(0.0) | LOW(0.1-3.9) | MEDIUM(4.0-6.9) | HIGH(7.0-8.9) | CRITICAL(9.0-)",
+		},
 	}
 
 	app.Run(os.Args)
 }
 
 //Parse file designated by `fname`, and return list of Packs.
-func parseFile(fname *string) []Pack {
-	file, err := os.Open(*fname)
+func parseFile(fname string) []Pack {
+	file, err := os.Open(fname)
 	if err != nil {
 		debug.Fatal(err)
 	}
