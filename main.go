@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/urfave/cli"
 	"log"
+	"math"
 	"os"
 	"regexp"
 
@@ -75,14 +75,11 @@ func main() {
 		verbose := ctx.Bool("verbose")
 		severity := ctx.StringSlice("severity")
 
-		log.Println(severity)
-
-		flag.Parse()
 		debug = debugT(verbose)
 
 		packs := parseFile(fname)
 		results := findCVEs(packs)
-		outputJson(results)
+		outputJson(results, severity)
 
 		return nil
 	}
@@ -283,8 +280,40 @@ func fillCVE(cveID string) CVE {
 }
 
 //Echo Results as JSON.
-func outputJson(results []Result) {
-	oJson, err := json.Marshal(&results)
+func outputJson(results []Result, severity []string) {
+	var outputResults []Result
+	for _, result := range results {
+		r := Result{Pack: result.Pack, CVEs: map[string]CVE{}}
+		for _, cve := range result.CVEs {
+			ss := math.Max(float64(cve.Cvss2BaseScore), float64(cve.Cvss3BaseScore))
+			var s string
+			if ss == 0.0 {
+				s = "NONE"
+			} else if 0.1 <= ss && ss <= 3.9 {
+				s = "LOW"
+			} else if 4.0 <= ss && ss <= 6.9 {
+				s = "MEDIUM"
+			} else if 7.0 <= ss && ss <= 8.9 {
+				s = "HIGH"
+			} else if 9.0 <= ss {
+				s = "CRITICAL"
+			}
+
+			for _, sss := range severity {
+				if sss == s {
+					r.CVEs[cve.CveID] = cve
+					break
+				}
+			}
+		}
+
+		if len(r.CVEs) == 0 {
+			continue
+		} else {
+			outputResults = append(outputResults, r)
+		}
+	}
+	oJson, err := json.Marshal(&outputResults)
 	if err != nil {
 		debug.Fatal(err)
 	}
