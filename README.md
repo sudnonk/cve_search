@@ -1,5 +1,5 @@
-# cve_search_by_version
-Find CVEs from list of packages.
+# cve_search
+Find CVEs from list of packages. For RedHat, CentOS, like that.
 
 ## Example 
 When you only have list of package as a txt file like below, 
@@ -63,3 +63,8 @@ then you can get list of CVEs in JSON format.
 ```
 
 ## Install
+
+1. Install [go-cve-directory](https://github.com/kotakanbe/go-cve-dictionary) and [goval-directory](https://github.com/kotakanbe/goval-dictionary)
+2. ```for i in `seq 2002 $(date +"%Y")`; do go-cve-dictionary fetchnvd -dbpath /root/vuln_scan/cve.sqlite3 -years $i; done```.
+3. `goval-directory fetch-redhat -dbpath /root/vuln_scan/oval/sqlite3 5 6 7`.
+4. Download build file from release, then put it in `$GOROOT/bin`.
