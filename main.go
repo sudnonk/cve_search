@@ -66,7 +66,6 @@ func main() {
 	)
 	flag.Parse()
 	debug = debugT(*verbose)
-	log.Println(debug)
 
 	file, err := os.Open(*fname)
 	if err != nil {
@@ -114,6 +113,7 @@ func main() {
 }
 
 func parseFile(file *os.File) []Pack {
+	log.Println(debug)
 	var packs []Pack
 	s := bufio.NewScanner(file)
 	for s.Scan() {
@@ -241,19 +241,5 @@ func fillCVE(cveID string) CVE {
 		Cvss2Severity:     Cvss2Severity,
 		Cvss3BaseScore:    Cvss3BaseScore,
 		Cvss3BaseSeverity: Cvss3BaseSeverity,
-	}
-}
-
-func PrintResult(r Result) {
-	fmt.Println(
-		`Package: ` + r.Pack.Name + "-" + r.Pack.Version + "-" + r.Pack.Release + "." + r.Pack.Arch + "\n",
-	)
-
-	for cveID, cve := range r.CVEs {
-		fmt.Println(
-			cveID+"\n"+"  "+
-				"CVSS3 Severity: "+cve.Cvss3BaseSeverity+"\n",
-			"CVSS2 Severity: "+cve.Cvss2Severity+"\n",
-		)
 	}
 }
