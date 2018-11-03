@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/urfave/cli"
 	"log"
 	"os"
 	"regexp"
@@ -15,7 +16,6 @@ import (
 )
 
 const (
-	CpeDbPath  = "/root/vuln_scan/cpe.sqlite3"
 	CveDbPath  = "/root/vuln_scan/cve.sqlite3"
 	OvalDbPath = "/root/vuln_scan/oval.sqlite3"
 )
@@ -60,23 +60,96 @@ func (d debugT) Fatal(err error) {
 }
 
 func main() {
-	var (
-		fname   = flag.String("filename", "", "Path to list of packages")
-		verbose = flag.Bool("v", false, "Debug mode")
-	)
-	flag.Parse()
-	debug = debugT(*verbose)
+	app := cli.NewApp()
 
+	app.Name = "Search CVEs from packages"
+	app.Usage = "This app finds CVEs from list of packages, then echo CVEs as JSON."
+	app.Version = "1.0.0"
+	cli.VersionFlag = cli.BoolFlag{
+		Name:  "version, v",
+		Usage: "Echo version",
+	}
+
+	app.Action = func(ctx *cli.Context) error {
+		var (
+			fname   = flag.String("filename", "", "Path to list of packages")
+			verbose = flag.Bool("v", false, "Debug mode")
+		)
+
+		flag.Parse()
+		debug = debugT(*verbose)
+
+		packs := parseFile(fname)
+		results := findCVEs(packs)
+		outputJson(results)
+
+		return nil
+	}
+
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "verbose, V",
+			Usage: "If set, echo debug logs.",
+		},
+		cli.StringFlag{
+			Name:  "filename, f",
+			Usage: "Find from the list in `PATH`",
+		},
+	}
+
+	app.Run(os.Args)
+}
+
+//Parse file designated by `fname`, and return list of Packs.
+func parseFile(fname *string) []Pack {
 	file, err := os.Open(*fname)
 	if err != nil {
 		debug.Fatal(err)
 	}
 	defer file.Close()
-	debug.Println("Parse file start.")
-	packs := parseFile(file)
-	debug.Println("Parse file end.")
 
+	var packs []Pack
+	s := bufio.NewScanner(file)
+	for s.Scan() {
+		l := s.Text()
+		pack, err := parsePackage(l)
+		if err != nil {
+			debug.Println(err)
+			continue
+		}
+
+		packs = append(packs, pack)
+	}
+	if s.Err() != nil {
+		debug.Fatal(s.Err())
+	}
+
+	return packs
+}
+
+var r = regexp.MustCompile(`(.+)-(\d+.*)-(\d+.*)\.(x86_64|noarch|i386)`)
+
+//Parse line, and convert it to Pack like below.
+//openssl-1.0.1e-30.el6_6.11.x86_64 -> openssl 1.0.1e 30.el6_6 11 x86_64
+func parsePackage(p string) (Pack, error) {
+	re := r.FindStringSubmatch(p)
+	if len(re) != 5 {
+		return Pack{}, errors.New("Failed to parse package: " + p)
+	}
+
+	return Pack{
+		re[1],
+		re[2],
+		re[3],
+		re[4],
+	}, nil
+}
+
+//Find CVEs the packages are affected, and return it as Result.
+func findCVEs(packs []Pack) []Result {
 	debug.Println("Connecting DB.")
+
+	var err error
 	OvalDB, err = sql.Open("sqlite3", OvalDbPath)
 	if err != nil {
 		debug.Fatal(err)
@@ -105,50 +178,10 @@ func main() {
 	}
 	debug.Println("Find CVEs end.")
 
-	oJson, err := json.Marshal(&results)
-	if err != nil {
-		debug.Fatal(err)
-	}
-	fmt.Println(string(oJson))
+	return results
 }
 
-func parseFile(file *os.File) []Pack {
-	var packs []Pack
-	s := bufio.NewScanner(file)
-	for s.Scan() {
-		l := s.Text()
-		pack, err := parsePackage(l)
-		if err != nil {
-			debug.Println(err)
-			continue
-		}
-
-		packs = append(packs, pack)
-	}
-	if s.Err() != nil {
-		debug.Fatal(s.Err())
-	}
-
-	return packs
-}
-
-var r = regexp.MustCompile(`(.+)-(\d+.*)-(\d+.*)\.(x86_64|noarch|i386)`)
-
-//openssl-1.0.1e-30.el6_6.11.x86_64 -> openssl 1.0.1e 30.el6_6 11 x86_64
-func parsePackage(p string) (Pack, error) {
-	re := r.FindStringSubmatch(p)
-	if len(re) != 5 {
-		return Pack{}, errors.New("Failed to parse package: " + p)
-	}
-
-	return Pack{
-		re[1],
-		re[2],
-		re[3],
-		re[4],
-	}, nil
-}
-
+//Find and return CveID the package is affected.
 func findCveIDs(pack Pack) []string {
 	rows, err := OvalDB.Query(
 		`select definition_id,version,not_fixed_yet from packages where name = ? and version like ?`,
@@ -200,6 +233,7 @@ func findCveIDs(pack Pack) []string {
 
 }
 
+//Find CVE of the designated CveID, and return it as CVE.
 func fillCVE(cveID string) CVE {
 	nvdRow := CveDB.QueryRow(
 		`select id from nvd_jsons where cve_id = ?`,
@@ -241,4 +275,13 @@ func fillCVE(cveID string) CVE {
 		Cvss3BaseScore:    Cvss3BaseScore,
 		Cvss3BaseSeverity: Cvss3BaseSeverity,
 	}
+}
+
+//Echo Results as JSON.
+func outputJson(results []Result) {
+	oJson, err := json.Marshal(&results)
+	if err != nil {
+		debug.Fatal(err)
+	}
+	fmt.Println(string(oJson))
 }
