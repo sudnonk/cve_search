@@ -284,27 +284,31 @@ func outputJson(results []Result, severity []string) {
 	var outputResults []Result
 	for _, result := range results {
 		r := Result{Pack: result.Pack, CVEs: map[string]CVE{}}
-		for _, cve := range result.CVEs {
-			ss := math.Max(float64(cve.Cvss2BaseScore), float64(cve.Cvss3BaseScore))
-			var s string
-			if ss == 0.0 {
-				s = "NONE"
-			} else if 0.1 <= ss && ss <= 3.9 {
-				s = "LOW"
-			} else if 4.0 <= ss && ss <= 6.9 {
-				s = "MEDIUM"
-			} else if 7.0 <= ss && ss <= 8.9 {
-				s = "HIGH"
-			} else if 9.0 <= ss {
-				s = "CRITICAL"
-			}
+		if len(severity) != 0 {
+			for _, cve := range result.CVEs {
+				ss := math.Max(float64(cve.Cvss2BaseScore), float64(cve.Cvss3BaseScore))
+				var s string
+				if ss == 0.0 {
+					s = "NONE"
+				} else if 0.1 <= ss && ss <= 3.9 {
+					s = "LOW"
+				} else if 4.0 <= ss && ss <= 6.9 {
+					s = "MEDIUM"
+				} else if 7.0 <= ss && ss <= 8.9 {
+					s = "HIGH"
+				} else if 9.0 <= ss {
+					s = "CRITICAL"
+				}
 
-			for _, sss := range severity {
-				if sss == s {
-					r.CVEs[cve.CveID] = cve
-					break
+				for _, sss := range severity {
+					if sss == s {
+						r.CVEs[cve.CveID] = cve
+						break
+					}
 				}
 			}
+		} else {
+			r.CVEs = result.CVEs
 		}
 
 		if len(r.CVEs) == 0 {
