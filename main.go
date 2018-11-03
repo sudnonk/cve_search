@@ -93,7 +93,7 @@ func main() {
 		result := Result{Pack: pack, CVEs: map[string]CVE{}}
 		debug.Println("Finding CveIDs for " + pack.Name)
 		for _, cveID := range findCveIDs(pack) {
-			log.Println("Finding CVEs for " + cveID)
+			debug.Println("Finding CVEs for " + cveID)
 			if cve, ok := CVEs[cveID]; ok {
 				result.CVEs[cveID] = cve
 			} else {
@@ -113,7 +113,6 @@ func main() {
 }
 
 func parseFile(file *os.File) []Pack {
-	log.Println(debug)
 	var packs []Pack
 	s := bufio.NewScanner(file)
 	for s.Scan() {
